@@ -1,5 +1,5 @@
 # REST Playbook
 [Home](index.md)
-[Constraints](constraints.md)
-[Developing a Web-based API](developing-api.md)
+[REST Basics](constraints.md)
+[Developing an API](developing-api.md)
 [References](references.md)

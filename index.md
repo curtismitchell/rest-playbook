@@ -13,7 +13,7 @@ For clarity of this guide, let's contrast what REST is against what it is not.
 | a set of constraints for network-based systems | a method for designing web applications |
 | a means of transferring state via representations of resources | a religion |
 
-Before diving into examples and detailed guidance, please checkout the [REST Constraints](constraints.md).  The material is concise and foundational to the detailed materials.
+Before diving into examples and detailed guidance, please checkout the [REST Basics](constraints.md).  The material is concise and foundational to the detailed materials.
 
 
 <a class="btn btn-primary" href="constraints.md">Learn more about REST</a>

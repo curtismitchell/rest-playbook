@@ -1,16 +1,26 @@
-# Constraints
+# REST Basics
+
+## Resources
+
+Representational State Transfer is centered around interactions with **representations** of resources.  Resources are typically entities expressed as nouns within a system.  A resource could be a virtual entity like a BitCoin.  Or, a resource could be a physical entity like a printer.
+
+>A flesh-and-blood or bricks-and-mortar resource becomes a web resource by the simple act of making the information associated with it accessible on the Web. - REST in Practice, Jim Webber, Savas Parastatidis, and Ian Robinson. 
+
+By definition, a representation is simply a portrayal that is designed with the expressed intent of allowing interaction and/or manipulation of a resource.
+
+##Constraints
 
 REST consists of six constraints, that is to say that the following six rules must apply in order to create a "RESTful" system.
 
-## Client/Server
+##Client/Server
 REST requires a distinction between a client system and a server system.  This establishes roles between two systems that are communicating.  The client system is responsible for initiating communication via a **Request**.  And, the server system processes the **Request** and issues a **Response**.  That concept  establishes the foundation for a communication protocol.
 
 In addition, the **Client/Server** constraint facilitates **separation of concerns**, an architectural concept used to decouple functions into independent components.  Here, a server system will be independent of the client system and vice-versa.  The communication between them will be enabled by their adherence to a **Uniform Interface**.
 
-## Uniform Interface
+##Uniform Interface
 The **Uniform Interface** is a set of conventions a network-based system must follow in order to communicate with other systems across the network.  This constraint consist of four parts.
 
-### Identification of Resources
+###Identification of Resources
 Within the client/server paradigm, clients make requests regarding **Resources**, and servers respond in-turn.  This interaction requires systems to agee to a standard of identifying resources available on the network.  HTTP uses **Uniform Resource Identifiers** for this purpose.  
 
 ```http
