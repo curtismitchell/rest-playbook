@@ -2,9 +2,9 @@
 
 ##What does it mean for a Web-based API to be REST-ful?
 
-Understanding REST as an architectural style is paramount to defining an API as REST-ful.  As discussed earlier, REST is an approach that was applied to the design of HTTP, which means REST constraints are foundational to the way the the Web works.
+Understanding REST as an architectural style is paramount to defining an API as REST-ful.  As discussed earlier, REST is an approach that was applied to the design of HTTP/1.1, which means REST constraints are foundational to the way the the Web works.
 
-In this section, general design guidance will be provided.  This guidance will provide insight into how to use HTTP and general practices to:
+In this section, general guidance for **web-based** API design will be provided.  This guidance will provide insight into how to use HTTP and common web development practices to:
 
 * Model resources
 * Work with common media types
@@ -16,6 +16,10 @@ In this section, general design guidance will be provided.  This guidance will p
 * Use HTTP status codes
 * Specify cacheability
 * Authenticate clients
+
+
+**Note:**  Modern web frameworks that advertise support for REST are usually pointing out the ease at which they support some or all of these practices.    
+
 
 ##Modeling Resources and designing URIs
 
@@ -105,7 +109,7 @@ https://github.com/PF-iPaaS/core-services/compare/master...oauth-refresh
 4. URIs should not indicate CRUD functions e.g. ```/getUsers```
 5. URIs should not indicate the format of data e.g. ```/users.xml```
 
-##Media Types
+##Media Types/Representations
 
 Media Types are the representations of resources.  Therefore, they are at the core of **Representational** State Transfer.  They provide structure to the data that is accessible from a resource.
 
@@ -162,5 +166,171 @@ Using the ```Accept``` header, a client can request a specific version of a vend
 1. Take advantage of the ```Accept``` header when multiple representations of a resource are available.
 2. Optionally, allow clients to specify an ```ACCEPT``` value via query parameter.  e.g. ```http://api.acmecorp.com/car?accept=application/csv```
 3. Take advantage of the optional parameters for features like versioning.
+
+##Partial Representations
+
+There are times when the totality of a media type is more than the client needs.  In order to lower the effective cost of communicating, the designer of the API could provide a means of returning less data.  The solution here is dependent upon the scenario.
+
+###All clients require the same subset of fields
+
+When all clients are expected to need the same subset of fields, a different media type could be provided.  Assume the following media type:
+
+```
+application/vnd.acmecorp.contact+json
+
+{
+    first_name: "John",
+    last_name: "Doe",
+    email: "john.doe@not-real.acmecorp.com",
+    phone: "(919)555-1234",
+    address: {
+        street: 123 Anywhere Lane,
+        city: Raleigh,
+        state: NC,
+        zip: 27601
+    }
+    etc...
+}
+```
+
+If all clients are expected to use the name and email address fields for many of their interactions, a smaller media type could be created:
+
+```
+application/vnd.acmecorp.mini-contact+json
+
+{
+    name: "John Doe",
+    email: "john.doe@not-real.acmecorp.com"
+}
+```
+
+**Alternatively**, the API could provide an additional resource.  For example, take the following request:
+
+```http
+GET /contacts/123
+ACCEPT: application/json
+```
+
+And, assume this response:
+
+```
+{
+    first_name: "John",
+    last_name: "Doe",
+    email: "john.doe@not-real.acmecorp.com",
+    phone: "(919)555-1234",
+    address: {
+        street: 123 Anywhere Lane,
+        city: Raleigh,
+        state: NC,
+        zip: 27601
+    }
+    etc...
+}
+```
+
+An additional resource could be created, so that this request:
+
+```http
+GET /contacts/123/webprofile
+ACCEPT: application/json
+```
+
+would net a response like this one:
+
+```
+{
+    name: "John Doe",
+    email: "john.doe@not-real.acmecorp.com"
+}
+```
+
+Note: In the latter example, the *webprofile* resource is seemingly nested beneath the *contacts* resource.  It could also be modeled without the nesting using ```/webprofiles/123``` if desired.
+
+###Fields are arbitrary to the client
+
+In the case where each client may wish to request an arbitrary subset of fields, filtering could be applied in order to fulfill the request.  First, the server would need to know which fields the client wishes to receive.
+
+Note: The decision to use inclusion here is based on the need to return less data.  Therefore, it is presumably less chatty to ask "what to return", instead of "what to exclude".
+
+Luckily, HTTP provides a protocol for receiving a client's answers to a query: query parameters.  Here, the client would make the request and provide a list of fields to include:
+
+```http
+GET /contacts/123?fields=name,email
+ACCEPT: application/json
+```
+
+Similar to the examples above, the response would only contain the ```name``` and ```email``` fields.
+
+```
+{
+    name: "John Doe",
+    email: "john.doe@not-real.acmecorp.com"
+}
+```
+
+The parameter name, **fields**, is a design choice. A different parameter name may be used.  The documentation of the API should specify the parameter details.
+
+##Filtering, Sorting and Paging
+
+Query parameters are great for adding behavior to an API that is based on the arbitrary input of a client.  This is particularly useful for filtering, sorting, and paging.
+
+Note: The parameters used for implementing filtering, sorting, and paging are up to the API designer.  However, the names chosen should be documented and consistent.
+
+###Filtering
+Assuming a client would like a list of employees with the last name "Smith", the following HTTP request may be used:
+
+```http
+GET /employees?lastname=smith
+```
+
+Here, the request does not explicit indicate the need for a filter.  Instead, it simply declares the desired value for a field in the media type.
+
+Multiple parameters could be used to indicate additional filters:
+
+```http
+GET /employees?lastname=smith&firstname=john
+```
+
+In this case, the response will be limited to employess with the last name "Smith" **and** the first name "john" (case-insensitive).  
+
+This example is simply an illustration of how HTTP constructs can assist in the design of an API.  An API designer that would like to support **"OR"** parameters could use multiple values. e.g.
+
+```http
+GET /employees?lastname=smith&firstname=john,rachel
+```
+
+This query will pass the server a single value for ```lastname```, but an array of values for ```firstname```.  These values could be read as ```"lastname=smith" AND "firstname=john or rachel"```.  Again, that is up to the designer of the API.
+
+###Sorting
+
+Again, sorting is a matter of choosing one or two query parameters to meet the needs of the API.  Here, I choose ```sortby``` as the name of the parameter that will hold the names of the fields.  And, ```desc``` as the name of the parameter that will tell me whether to sort in ascending order or descending order.  
+
+```http
+GET /employees?sortby=lastname
+```
+
+The absence of **desc** works like a switch.  When the order is not **desc**, it is **asc**.  Therefore, the results should be sorted by last name; in ascending order.
+
+Likewise, if the client would like descending order:
+
+```http
+GET /employees?sortby=lastname&desc=true
+```
+
+Multiple fields can be accommodated using further URI semantics.  Here is an example using comma-delimited parameters:
+
+```http
+GET /employees?sortby=lastname,yearsofservice&desc=true,false
+```
+
+If both parameters are treated as arrays, the result would be sorted in descending order by the ```lastname``` field, then in ascending order by the ```yearsofservice``` field.
+
+###Pagination
+
+##HATEOAS
+
+
+
 
 
