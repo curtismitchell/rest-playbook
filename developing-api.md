@@ -326,11 +326,97 @@ GET /employees?sortby=lastname,yearsofservice&desc=true,false
 
 If both parameters are treated as arrays, the result would be sorted in descending order by the ```lastname``` field, then in ascending order by the ```yearsofservice``` field.
 
-###Pagination
+###Paging
 
-##HATEOAS
+Another scenario where query parameters are very helpful is **Paging**.  An API designer will want to return paged representations when a query against a collection or store returns an arbitrarily large set of results.  Again, this control offers a lower cost to the client/server communication when the client does not absolutely need to receive all of the results.
 
+In this case, the API should allow the client to request a page of a given size.  The parameter names used are up to the API designer, but here are some common examples:
 
+```http
+/employees?take=10&skip=10
+/employees?pageSize=10&page=2
+/employees?limit=10&offset=10
+```
+
+The three URIs above are attempting to receive the same result, a collection of 10 employees that are within the __second__ set/page of employees.  Here is a breakdown of how each URI could be interpreted:
+
+| Parameters | Meaning |
+| :--------- | :------ |
+| ?take=10&skip=10 | take the next 10 results after skipping the top 10 results |
+| ?pageSize=10&page=2 | group the results into sets containing no more than 10 items and return the second set |
+| ?limit=10&offset=10 | return no more than 10 results, starting from the 11th item in the results |
+
+While the parameter names differ, functionally, these requests should produce the same result.  
+
+##Hypermedia/HATEOAS
+As described in the [REST Basics](constraints.md), Hypermedia is an important part of the Uniform Interface adhered to by servers and clients.  **Paging** is an example of where Hypermedia is very valuable.  Hypermedia would allow a client to discover how to get the page through data.  
+
+Here is an example:
+
+- The client issues a request for a list of employees with the last name 'Smith'.
+
+```http
+GET /employees?lastname=smith
+ACCEPT: application/json
+```
+
+- Assuming there are 50 employees with that last name, the server responds with **paged** results.  This is the body of the response:
+
+```
+{
+    data: [
+        {
+            id: "/employees/18",
+            name: "Abby Smith"
+        },
+        {
+            id: "/employees/44",
+            name: "Amanda Smith"
+        },
+        {
+            id: "/employees/21",
+            name: "Conroy Smith"
+        }, 
+        {
+            id: "/employees/13",
+            name: "David Smith"
+        },  
+        {
+            id: "/employees/4",
+            name: "James Smith"
+        }                             
+    ],
+    page: 1,
+    pageSize: 5,
+    totalPages: 10,
+    links: {
+        "self": "/employees?lastname=smith&page=1&pagesize=5",
+        "next": "/employees?lastname=smith&page=2&pagesize=5",
+        "last": "/employees?lastname=smith&page=10&pagesize=5"
+    }
+}
+```
+
+In this example, the client would receive the first page of employees.  In addition, part of the response body includes ```links``` that provide related identifiers that the client could request if necessary.
+
+The schema for sharing hypermedia in data formats other than HTML is still up to the designer of the API.  However, as JSON continues to grow as the preferred data format for Web APIs, a couple of specifications have been proposed:
+
+* [HAL](http://stateless.co/hal_specification.html)
+* [Hyper-Schema](http://json-schema.org/latest/json-schema-hypermedia.html)
+
+Since the purpose of Hypermedia is adherence to a Uniform Interface, it is important to use well-defined terms and structures.  The example above does not adhere to HAL or Hyper-Schema.  However, all three formats utilize URIs and the well-defined [Link Relations](http://www.iana.org/assignments/link-relations/link-relations.xml), or [REL](http://www.iana.org/assignments/link-relations/link-relations.xml) definitions to specify **how** each link relates to the returned document.
+
+| REL | Definition |
+| :-------- | :--------- |
+| self | Conveys an identifier for the link's context. |
+| next | Indicates that the link's context is a part of a series, and that the next in the series is the link target. |
+| last | An IRI that refers to the furthest following resource in a series of resources |
+
+There are many types of related resources that can be expressed in a response.  For a list of the registered types, see [Registered REL types](http://www.iana.org/assignments/link-relations/link-relations.xml).
+
+The ```links``` section is not the only place where Hypermedia was returned in the above example.  The ```id``` property of each employee was also returned as a URI.  Again, this enables the client to submit a request for that resource fairly easily.  
+
+Note: Full-qualified URIs would make them easier for clients to use.
 
 
 

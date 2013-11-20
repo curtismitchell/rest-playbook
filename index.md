@@ -10,10 +10,11 @@ For clarity of this guide, let's contrast what REST is against what it is not.
 | :--------- | ---------------------: |
 | an architectural style | extensionless URLs |
 | vendor-agnostic | a feature of a framework |
-| a set of constraints for network-based systems | a method for designing web applications |
+| a set of constraints to aid the design of network-based systems | a method for designing web applications |
 | a means of transferring state via representations of resources | a religion |
+| applied to the design of HTTP/1.1 | HTTP |
 
-Before diving into examples and detailed guidance, please checkout the [REST Basics](constraints.md).  The material is concise and foundational to the detailed materials.
+Before diving into examples and detailed guidance, please checkout the [REST Basics](constraints.md).
 
 
 <a class="btn btn-primary" href="constraints.md">Learn more about REST</a>
