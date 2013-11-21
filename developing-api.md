@@ -109,6 +109,73 @@ https://github.com/PF-iPaaS/core-services/compare/master...oauth-refresh
 4. URIs should not indicate CRUD functions e.g. ```/getUsers```
 5. URIs should not indicate the format of data e.g. ```/users.xml```
 
+##HTTP Verbs, CRUD, and beyond
+
+Most web applications offer authorized users the ability to create, read, update, and delete structured data that is held within a database or other data store.  Within a web application, developers typically map HTTP verbs to operations somewhat like this:
+
+| Verb | Operation/Effect |
+| :--- | :-------- |
+| GET | Retrieve a web page, and pass any parameters in the query segment of the URI. |
+| POST | Send data to the server within the body of the request (not, in the query segment).  The server will use that data to perform an Update, Insert/Create, or Delete operation. |
+
+And, that's it.  Servers used contextual information such as page name or parameters to determine which operation was necessary.  Oddly, HTTP specifies other VERBS that could be used to communicate the expected operation as metadata.
+
+As Web-based APIs became more common, support for other HTTP VERBS widened and are now available on major web servers.  Now, resource-oriented API designers can map HTTP verbs to operations like this:
+
+| Verb | Operation/Effect |
+| :--- | :-------- |
+| GET | Retrieve a media type (Read) |
+| POST | Create a new resource, or update an existing resource |
+| PUT | Replace an existing resource, or create a new resource in a store |
+| DELETE | Delete a resource |
+| HEAD | Retrieve the metadata (headers) |
+| OPTIONS | Retrieve metadata related to the operations allowed on the resource |
+
+Effectively, there appears to be overlap between ```POST``` and ```PUT``` usage.  However, when you consider the difference between a **Collection** resource and a **Store** resource, the differences in interactions should become clearer.
+
+| URI | Resource type | GET | POST | PUT | DELETE |
+| :-- | :-- | :--- | :-- | :----- | 
+| /employees | collection | returns list | add to list and return URI of new resource | not supported | delete all entities in list | 
+| /employees/123 | document | return single entity | update existing entity (partially or fully) | replace entire entity | delete entity |
+| /documents | store | returns list | adds to list and return URI of new resource | replace list | delete all entities in list |
+| /documents/a-doc | document | retrieve single entity (if found) | update an existing entity | replace entity if exists, create a new entity if it doesn't exist | delete the entity |
+
+Note: Some verbs/methods are considered "safe" because they do not propose state changes to the server.  ```GET```, ```OPTIONS```, and ```HEAD``` verbs are safe.  Idempotency is another important concept as it indicates operations that can occur repeatedly and achieve the same result.  ```GET``` and ```PUT``` operations are considered idempotent.  
+
+###The "other" verbs
+
+The ```HEAD``` verb returns the usual headers that would be returned in a ```GET``` request.  However, it does not return a body.  This is useful when clients want to verify the existence of a resource.
+
+_Request:_
+```http
+HEAD /employees/123
+HOST: api.acmecorp.com
+```
+
+_Response:_
+```http
+HTTP/1.1 200 OK
+Content-Type: application/vnd.acmecorp.employee+json
+Content-Length: 0
+Date: Thu, 21 Nov 2013 03:23:04 GMT
+```
+
+The ```OPTIONS``` verb returns an ```ACCEPT``` header indicating which verbs are allowed against a resource.
+
+_Request:_
+```http
+OPTIONS /employees/123
+HOST: api.acmecorp.com
+```
+
+_Response:_
+```http
+HTTP/1.1 200 OK
+ACCEPT: GET, POST, HEAD, PUT, DELETE
+```
+
+For ```OPTIONS``` requests, a body could optionally be included to provide more details about the acceptable operations.
+
 ##Media Types/Representations
 
 Media Types are the representations of resources.  Therefore, they are at the core of **Representational** State Transfer.  They provide structure to the data that is accessible from a resource.
@@ -348,6 +415,10 @@ The three URIs above are attempting to receive the same result, a collection of 
 
 While the parameter names differ, functionally, these requests should produce the same result.  
 
+###In Practice
+- Use query parameters for filtering, sorting, and paging collection and store resource types.
+- Use common, easy-to-understand parameter names in a consistent manner for functions like filtering, sorting and paging.
+
 ##Hypermedia/HATEOAS
 As described in the [REST Basics](constraints.md), Hypermedia is an important part of the Uniform Interface adhered to by servers and clients.  **Paging** is an example of where Hypermedia is very valuable.  Hypermedia would allow a client to discover how to get the page through data.  
 
@@ -418,5 +489,8 @@ The ```links``` section is not the only place where Hypermedia was returned in t
 
 Note: Full-qualified URIs would make them easier for clients to use.
 
-
+###In Practice
+- Use a consistent hypermedia format to represent relationships between resources.
+- Include a hypermedia representation to the current document using the "self" link relation.
+- Use full-qualified URIs since ```http://staging-api.acmecorp.com/employees``` is a different resource than ```http://api.acmecorp.com/employees```
 
