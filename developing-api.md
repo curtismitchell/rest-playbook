@@ -494,3 +494,164 @@ Note: Full-qualified URIs would make them easier for clients to use.
 - Include a hypermedia representation to the current document using the "self" link relation.
 - Use full-qualified URIs since ```http://staging-api.acmecorp.com/employees``` is a different resource than ```http://api.acmecorp.com/employees```
 
+##Caching
+
+REST requires a response to specify the "cacheability" of an entity.  This means the server system should control the caching behavior of all the representations it issues.  
+
+The **Layered System** constraint allows intermediary systems on both the server-side and the client-side.  Any of these systems could cache an entity, however, it should only be done according to the directives offered by the issuing server system.
+
+>Responses to GET requests are cacheable by default. Responses to POST requests are not cacheable by default, but can be made cacheable ... Responses to PUT and DELETE requests are not cacheable at all. - REST in Practice
+
+This can be summarized accordingly:
+
+| | GET | POST | PUT | DELETE |
+|:-|:-|:-|:-|:-|
+| Allow Caching | Yes | It Depends | No | No |
+
+Note: An API designer may choose to return a representation when a POST request is used to create a new entity or modify an existing entity.  Caching can be applied to that request body using the techniques described below.
+
+###Specifying Cacheability
+
+Within a response, there are two headers that are used to specify caching: `Expires` and `Cache-Control`.
+
+The `Expires` header specifies an absolute time when the representation will no longer be valid.  After that time, the representation is considered stale and should be re-issued or **revalidated** by the issuing server system (instead of the caching system).
+
+*Example **Expires** Header*
+
+```http
+...
+Expires: Fri, 22 Nov 2013 09:55:15 GMT
+...
+```
+
+Note: **Revalidation** means the issuing server can determine whether a fresh representation should be issued, or if the cached copy is still up-to-date.
+
+The `Cache-Control` header offers additional ways of specifying the cache behavior.  It is usable in the request and response.  It is often used in conjunction with the `Last-Modified` and `ETag` headers.  They are considered to be **validators** that help with the revalidation process.
+
+Here are some scenarios where `Cache-Control` should be used:
+
+####Client wants to explicitly request a fresh representation
+
+*Request*
+
+```http
+GET /employees/123
+Host: api.acmecorp.com
+Cache-Control: no-cache
+```
+
+The `no-cache` directive instructs the intermediaries to retrieve a representation directly from the issuing server.
+
+####Server specifies a time-to-live (TTL)
+
+Instead of an absolute expiration time, a server can also specify the maximum number of seconds that a representation is valid.
+
+*Response*
+
+```http
+...
+Cache-Control: max-age=300
+Last-Modified: Fri, 22 Nov 2013 09:53:24 GMT 
+...
+```
+
+An intermediary would know from the `max-age` value that the representation needs to be revalidated after 300 seconds or 5 minutes.  The revalidation process is done using a conditional `GET` request.
+
+*Request*
+
+```http
+GET /employees/123
+Host: api.acmecorp.com
+If-Modified-Since: Fri, 22 Nov 2013 09:53:24 GMT
+...
+```
+
+Notice the `If-Modified-Since` header and the value being used.  It is the same value of the `Last-Modified` header in the response (above).  This allows the server to only send a response body if the representation has changed since the value in the `If-Modified-Since` header.
+
+Another method of validation is the use of an *Entity Tag* or *ETag*.  An ETag is a string that uniquely identifies a version of a representation. 
+
+*Response*
+
+```http
+...
+Cache-Control: max-age=300
+ETag: "a5fd1eb"
+...
+```
+
+A conditional `GET` request using the ETag would look like this:
+
+*Request*
+
+```http
+GET /employees/123
+Host: api.acmecorp.com
+If-None-Match: "a5fd1eb"
+...
+```
+
+The server would revalidate the entity by comparing the ETag in the `If-None-Match` header with the ETag of the current representation.  If they match, the response from the server would consist of headers-only, indicating the cached version is still up-to-date.
+
+This section offered guidance on a few common caching scenarios.  `HTTP`, by way of the `Cache-Control` header and a few other **validators**, offers many additional controls for less common caching scenarios.  Before designing a custom solution to a seemingly *special case*, consult references on `Cache-Control` as they may offer a solution utilizing HTTP's Uniform Fields.
+
+*REST in Practice* (see [references](references.md)) goes into great detail about caching.  Specifically, it suggests using **granularity of updates** to decide between ETags or Last-Modified timestamps.  Timestamps are accurate to the nearest second.  ETags can be generated at any frequency.
+
+Furthermore, ETag values and Last-Modified values can be used for concurrency control - allowing a server to reject proposed state because the entity has changed since the client last requested it.  Ultimately, it is good practice to use ETags or, at minimal, Last-Modified timestamps in every applicable response.
+
+###In Practice
+
+- Indicate cacheability of each representation that is sent to a client.
+- When possible, provide an `Expires` value in the header of each response.
+- Prefer ETags over Last-Modified timestamps because ETags support any frequency of change.  *Switching from timestamps to ETags would require clients to change how they handle the response*  
+- Consider the sensitivity of the data when implementing caching.
+
+##HTTP Status Codes
+
+HTTP requires a server to return a **Status-Line** using the following format:
+
+`HTTP-Version` `Status-Code` `Reason/Phrase`
+
+Perhaps, the most common status is the **OK** status:
+
+```http
+HTTP/1.1 200 OK
+```
+
+There are forty standard status codes that fall within five different categories.  The first digit in the status code indicates the category as follows:
+
+| Code Format | Category |
+| :---------- | :------- |
+| 1xx | Informational - typically, protocol-level information |
+| 2xx | Success - request was handled successfully |
+| 3xx | Redirection - the resource is located in a different location |
+| 4xx | Client error - the client submitted an erroneous request |
+| 5xx | Server error - the server encountered an unexpected error | 
+
+Here are some commonly used status codes and reasons:
+
+| Code | Reason/Phrase | Description |
+| :--- | :----- | :------- |
+| 200 | OK | request was successful and the response contains a body |
+| 201 | Created | resource was created at the request of the client.  Should include a `Location` value in the headers with the URI of the new resource |
+| 202 | Accepted | used for asynchronous operations that may take a while to process. |
+| 204 | No Content | request was successful and the response contains no body |
+| 301 | Moved Permanently | the resource has a new URI that is specified in the `Location` header |
+| 303 | See Other | provides a pointer to a different resource using the `Location` header.  |
+| 304 | Not Modified | indicates the resource has not been modified per the information in the request (see the section on caching) |
+| 400 | Bad Request | non-specific client failure. When applicable, the body of the response can be used to provide more detail. |
+| 401 | Unauthorized | indicates an issue with the client's credentials |
+| 403 | Forbidden | the client's credentials are okay, but the client is not able to access the requested resource |
+| 404 | Not Found | the URI does not lead to an existing resource |
+| 405 | Method not allowed | the request is using an HTTP method that is not supported.  Use the `Allow` header to indicate the allowed methods |
+| 406 | Not Acceptable | the media type in the `Accept` header cannot be served |
+| 409 | Conflict | used when the request would violate the current state of the resource e.g. concurrency check - someone else changed the state of the resource since the client requested it |
+| 415 | Unsupported Media Type | indicates the `Content-Type` of the request will not be processed by the server |
+| 500 | Internal Server Error | there was an unexpected error on the server |
+
+Note: The *REST API Design Rulebook* (see references) has a great list of status codes and explanations.  Also, the W3 published a list of [status codes](http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html) and their purposes.
+
+
+
+
+
+
