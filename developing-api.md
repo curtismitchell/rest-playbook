@@ -650,7 +650,61 @@ Here are some commonly used status codes and reasons:
 
 Note: The *REST API Design Rulebook* (see references) has a great list of status codes and explanations.  Also, the W3 published a list of [status codes](http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html) and their purposes.
 
+##Authentication and Authorization
 
+`HTTP` offers support for authentication and authorization via the `Authorization` header.  
+
+### Basic Authentication
+**Basic Authentication** allows an HTTP client to pass user credentials as a base64-encoded string in the `Authorization` header.
+
+*Request*
+```http
+...
+Authorization: Basic dGVzdDp0ZXN0
+```
+
+Any base64 decoder could be used to see `dGVzdDp0ZXN0` is really `test:test`.  Therefore, interception of this value would expose the user's credentials to an unwanted party.  `TLS` could be used to secure the transport of the credendtials to the server.  However, as noted below, there are still good reasons to forego **Basic Authentication** in favor of something else.
+
+| Pros | Cons |
+| :--- | :--- |
+| Easy to setup | Extremely insecure over HTTP |
+| Widely supported by HTTP clients | When a user changes his/her password, the change needs to be propogated to the API clients |
+
+### Digest Access Authentication
+**Digest Access Authentication** attempts to overcome the issue of secure transport by providing a protocol for using hashed data to communicate between the server and the client.
+
+Essentially, it requires the server and the client to share a secret.  Often, the user's password is used as the shared secret.  **Digest** differs from **Basic** in that the password is not transmitted.  Instead, it is used to create a **Hash-based message authentication code** or **HMAC**.  
+
+At a high-level, it works as follows:
+
+1. The client makes a request of the server.
+2. The server returns a `401 Unauthorized` message which includes a **cryptographic nonce** ([an arbitrary number used in cryptographic communications](http://en.wikipedia.org/wiki/Cryptographic_nonce)), the realm of the server, and additional data indicating how the client should send subsequent requests. 
+3. The client constructs a new request by using the server-provided data and the shared secret to create an HMAC.  
+4. The client passes the HMAC in the `Authorization` header. 
+5. The server verifies the request by using the same raw data to calculate the HMAC.
+6. The client sends subsequent requests using the same process and nonce, until the server determines expiration of the nonce and sends a `401 Unauthorized` response. 
+
+Effectually, interception of this message would be useless without the secret.
+
+Note: `TLS` should still be required if using **Digest Authentication**.  A middle-man could intercept the message and use one of several techniques to ascertain the **shared secret**. 
+
+| Pros | Cons |
+| :--- | :--- |
+| More secure than Basic Authentication | Still poses a security threat without TLS |
+| Does not require transport of a user's password |  Changes to the shared secret must be synced between the server and all clients |
+| | Requires the server to store an unencrypted version of the shared secret, or a hashed version of the digest |
+| | The nonce requires the server to manage client-specific state |
+
+### OAuth2
+
+Basic Authentication and Digest Access Authentication using TLS are viable options for securing a web-based API.  Each has notable merits and concerns that should be considered by the designer of an API.  An obvious concern within both protocols is the dependency on a single shared credential.  Basic Authentication depends on the password and Digest Access Authentication depends on the shared secret.  Managing change to either of these items across multiple clients could become overwhelming.
+
+A solution to that problem is to use temporary credentials.  The OAuth2 proposed standard supports just that.  Overall, OAuth/OAuth2 aim to strengthen security by allowing authorization to access secured resources without sharing the user's credentials with the client.
+
+![](http://www.websequencediagrams.com/cgi-bin/cdraw?lz=dGl0bGUgT2J0YWluaW5nIEF1dGhvcml6YXRpb24gQ29kZQoKUmVzb3VyY2UgT3duZXIgLT4gV2ViIEFwcDogdmlzaXRzCgAJByAtPiAAHw46IHJlZGlyZWN0cyB0bwBPD1NlcnZlcgBMEwATFDogUmVxdWVzdCBhAIEWDWNvZGUKAEQUAHkUQXV0aGVudGljAIFZBmFuZC9vciBncmFuAEgPPwBtKWNvcnJlY3QgY3JlZGVudGlhbHMgYW5kIHBlcm1pc3Npb24gdG8ATxQAgRwZAIJUCQCCeBQK&s=vs2010)
+
+
+###In Practice
 
 
 
