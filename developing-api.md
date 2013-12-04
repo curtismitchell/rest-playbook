@@ -701,7 +701,7 @@ Basic Authentication and Digest Access Authentication using TLS are viable optio
 
 A solution to that problem is to use temporary credentials.  The OAuth2 proposed standard supports just that.  Overall, OAuth/OAuth2 aim to strengthen security by allowing authorization to access secured resources without sharing the user's credentials with the client.
 
-![](http://www.websequencediagrams.com/cgi-bin/cdraw?lz=dGl0bGUgT2J0YWluaW5nIEF1dGhvcml6YXRpb24gQ29kZQoKUmVzb3VyY2UgT3duZXIgLT4gV2ViIEFwcDogdmlzaXRzCgAJByAtPiAAHw46IHJlZGlyZWN0cyB0bwBPD1NlcnZlcgBMEwATFDogUmVxdWVzdCBhAIEWDWNvZGUKAEQUAHkUQXV0aGVudGljAIFZBmFuZC9vciBncmFuAEgPPwBtKWNvcnJlY3QgY3JlZGVudGlhbHMgYW5kIHBlcm1pc3Npb24gdG8ATxQAgRwZAIJUCQCCeBQK&s=vs2010)
+![Obtaining an Authorization Code](http://www.websequencediagrams.com/cgi-bin/cdraw?lz=UmVzb3VyY2UgT3duZXIgLT4gV2ViIEFwcDogdmlzaXRzCgAJByAtPiAAHw46IHJlZGlyZWN0cyB0byBBdXRob3JpemF0aW9uIFNlcnZlcgoATRIAExQ6IHJlcXVlc3QgYQA4DWNvZGUKAEQUAHkUYXV0aGVudGljAHsGYW5kL29yIGdyYW4ASA8_AG0pY29ycmVjdCBjcmVkZW50aWFscyBhbmQgcGVybWlzc2lvbiB0bwBPFACBHBkAglQJAIFWEwoK&s=vs2010)
 
 
 ###In Practice
