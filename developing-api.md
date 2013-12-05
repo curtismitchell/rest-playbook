@@ -701,11 +701,85 @@ Basic Authentication and Digest Access Authentication using TLS are viable optio
 
 A solution to that problem is to use temporary credentials.  The OAuth2 proposed standard supports just that.  Overall, OAuth/OAuth2 aim to strengthen security by allowing authorization to access secured resources without sharing the user's credentials with the client.
 
+In order to better illustrate the use of OAuth2, it is important to understand the actors:
+
+1. <dt>**Resource Owner**:</dt> <dd>the person that owns the protected resource</dd>
+2. <dt>**Client**:</dt> <dd>the program attempting to access a protected resource</dd>
+3. <dt>**Resource Server**:</dt> <dd>the server hosting the protected resource</dd>
+4. <dt>**Authorization Server**:</dt> <dd>the server responsible for managing identity verification and authorization</dd>
+
+The steps involved in implementing a full OAuth2 workflow can be described at a high level as follows:
+
+1. Trust is established between the client and the authorization server.
+2. The client obtains an <abbr title="permission to access protected resources">**authorization grant**</abbr> from the resource owner.
+3. The client exchanges the **authorization grant** for an <abbr>**access token**</abbr>.
+4. The client issues requests for protected resources using the **access token**.
+
+Note: The authorization server can, optionally, issue a **refresh token** when the **access token** is issued.  This allows the client to exchange the refresh token for a new access token when the original access token expires.
+
+###Establishing trust between the client and the authorization server
+
+OAuth2 requires registration of the client with the authorization server.  However, it does not specify how the registration should happen. Instead, the proposed specification focuses on the data to be shared with the authorization server.  That data includes:
+
+* the **client type** 
+* the **redirection URIs** 
+* and, any other information required by the authorization server
+
+The **client type** is important to know as it influences the type of **authorization grant** that should be issued by the authorization server.
+
+| Application Type | OAuth2 Client Type | Authorization Grant Type |
+| :--------------- | :----------------- | :----------------------- |
+| (server-side) Web Application | Confidential | Authorization Code |
+| (client-side) Web Application | Public | Implicit |
+| "Highly Privileged" Web Application <br/> (e.g applications created by the company that owns the authorization server) | Confidential | Password |
+
+Note: Native applications such as desktop software and mobile apps are omitted in order to focus primarily on web-based applications consuming web-based APIs.  However, OAuth2 can be used by Native applications.  
+
+The **client type** indicates whether the application can be trusted to safely store **client credentials**, the client id and secret that will be created specifically for the client by the authorization server.  If the client can safely secure client credentials, it is considered to be a **confidential client**.  Likewise, **Public clients** cannot be trusted to safely secure credentials.
+
+###Obtaining an Authorization Grant and an Access Token
+
+Once trust is established, the client must obtain an authorization grant.  An **Authorization Grant** represents permission granted by a resource owner to access protected resources.
+
+Server-based web applications are considered confidential.  Therefore, they can be expected to securely store and use client credentials. The workflow to retrieve an **authorization code** is illustrated below.
+
 ![Obtaining an Authorization Code](http://www.websequencediagrams.com/cgi-bin/cdraw?lz=UmVzb3VyY2UgT3duZXIgLT4gV2ViIEFwcDogdmlzaXRzCgAJByAtPiAAHw46IHJlZGlyZWN0cyB0byBBdXRob3JpemF0aW9uIFNlcnZlcgoATRIAExQ6IHJlcXVlc3QgYQA4DWNvZGUKAEQUAHkUYXV0aGVudGljAHsGYW5kL29yIGdyYW4ASA8_AG0pY29ycmVjdCBjcmVkZW50aWFscyBhbmQgcGVybWlzc2lvbiB0bwBPFACBHBkAglQJAIFWEwoK&s=vs2010)
+
+Using `HTTP` (with TLS), the workflow is as follows:
+
+*Request for authorization code*
+
+```http
+GET /auth?response_type=code&client_id=12345&redirect_uri=http%3A%2F%2Fmy.app.com%2Foauth&scope=&state=abc123 HTTP/1.1
+Host: api.acmecorp.com
+Cache-Control: no-cache
+```
+
+Some key parameters are passed in the query string of the URI using the `application/x-www-form-urlencoded` media type.
+
+| Parameter | Description | Required? | 
+| :-------- | :---------- | :-------: |
+| response_type | specifies the type of authorization grant being requested, which is always `code` for the `authorization code` grant type | yes |
+| client_id | the id portion of the client credentials created during registration | yes |
+| redirect_uri | the location to send the user once authorization completes | no (should have been shared during registration) |
+| scope | a resource-server-defined value used to restrict authorization to protected resources | no |
+| state | a value that is opaque to the authorization server that is expected to be returned in the response in order to protect against cross-site request forgery | no, but recommended |
+
+
+Notice the request passes three parameters in the body: `response_type`, `client_id`, and `redirect_uri`.  In order to request an **authorization code**, the value of `response_type` must be "code".  
+
+`redirect_uri` is an optional parameter since this value should be have been shared with the authorization server when the client was registered.  `scope` is also optionally provided to indicate the level of access being requested.
+
+On the other hand, `state` is used to prevent cross-site request forgery.  This should be an opaque value that gets returned to the `redirect_uri` by the authorization server.
+
+Note: The authorization server can, optionally, issue a **refresh token** when the **access token** is issued.  This allows the client to exchange the refresh token for a new access token when the original access token expires.
+
+Client-based web applications, such as **Single-Page Applications** implemented in a language like `Javascript`, are not expected to securely store client credentials.  
 
 
 ###In Practice
 
-
+* Use OAuth2 to secure a web-based API.
+* Use TLS to secure communications between the client and servers.
 
 
