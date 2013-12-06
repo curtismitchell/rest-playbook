@@ -695,7 +695,7 @@ Note: `TLS` should still be required if using **Digest Authentication**.  A midd
 | | Requires the server to store an unencrypted version of the shared secret, or a hashed version of the digest |
 | | The nonce requires the server to manage client-specific state |
 
-### OAuth2
+###OAuth2
 
 Basic Authentication and Digest Access Authentication using TLS are viable options for securing a web-based API.  Each has notable merits and concerns that should be considered by the designer of an API.  An obvious concern within both protocols is the dependency on a single shared credential.  Basic Authentication depends on the password and Digest Access Authentication depends on the shared secret.  Managing change to either of these items across multiple clients could become overwhelming.
 
@@ -717,7 +717,7 @@ The steps involved in implementing a full OAuth2 workflow can be described at a 
 
 Note: The authorization server can, optionally, issue a **refresh token** when the **access token** is issued.  This allows the client to exchange the refresh token for a new access token when the original access token expires.
 
-###Establishing trust between the client and the authorization server
+####Establishing trust between the client and the authorization server
 
 OAuth2 requires registration of the client with the authorization server.  However, it does not specify how the registration should happen. Instead, the proposed specification focuses on the data to be shared with the authorization server.  That data includes:
 
@@ -737,7 +737,7 @@ Note: Native applications such as desktop software and mobile apps are omitted i
 
 The **client type** indicates whether the application can be trusted to safely store **client credentials**, the client id and secret that will be created specifically for the client by the authorization server.  If the client can safely secure client credentials, it is considered to be a **confidential client**.  Likewise, **Public clients** cannot be trusted to safely secure credentials.
 
-###Obtaining an Authorization Grant and an Access Token
+####Obtaining an Authorization Grant and an Access Token
 
 Once trust is established, the client must obtain an authorization grant.  An **Authorization Grant** represents permission granted by a resource owner to access protected resources.
 
@@ -750,7 +750,7 @@ Using `HTTP` (with TLS), the workflow is as follows:
 *Request for authorization code*
 
 ```http
-GET /auth?response_type=code&client_id=12345&redirect_uri=http%3A%2F%2Fmy.app.com%2Foauth&scope=&state=abc123 HTTP/1.1
+GET /auth?response_type=code&client_id=12345&redirect_uri=https%3A%2F%2Fwww.clientwebapp.com%2Foauth2&scope=&state=abc123 HTTP/1.1
 Host: api.acmecorp.com
 Cache-Control: no-cache
 ```
@@ -765,21 +765,151 @@ Some key parameters are passed in the query string of the URI using the `applica
 | scope | a resource-server-defined value used to restrict authorization to protected resources | no |
 | state | a value that is opaque to the authorization server that is expected to be returned in the response in order to protect against cross-site request forgery | no, but recommended |
 
+Assuming the request passes validation and the resource owner grants authorization, the authorization server responds with a `302 redirect` like so:
 
-Notice the request passes three parameters in the body: `response_type`, `client_id`, and `redirect_uri`.  In order to request an **authorization code**, the value of `response_type` must be "code".  
+*Response from authorization server*
 
-`redirect_uri` is an optional parameter since this value should be have been shared with the authorization server when the client was registered.  `scope` is also optionally provided to indicate the level of access being requested.
+```http
+HTTP/1.1 302 Found
+Location: https://www.clientwebapp.com/oauth2?code=SplxlOBeZQQYbYS6WxSbIA&state=abc123
+```
 
-On the other hand, `state` is used to prevent cross-site request forgery.  This should be an opaque value that gets returned to the `redirect_uri` by the authorization server.
+The response will get handled by the client.  The `code` parameter will contain an authorization code that can be used no more than **once** to retrieve an access token.
+
+####Retrieving an Access Token
+
+As noted above, the authorization code represents authorization by the resource owner.  However, it does not grant the client access to the protected resource.  
+
+In order to gain access, the client must have an `access token`.  Using the **authorization code**, the client should issue a request to the authorization server's known token URI as follows:
+
+*Request for access token*
+
+```http
+POST /token HTTP/1.1
+Host: api.acmecorp.com
+Content-Type: application/x-www-form-urlencoded
+Accept: application/json
+```
+
+*Request body*
+
+```
+grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA&redirect_uri=https%3A%2F%2Fwww.clientwebapp.com%2Foauth2&client_id=12345&client_secret=shh_dont_tell
+```
+
+
+Here is a breakdown of the parameters:
+
+| Parameter | Description | Required? |
+| :-------- | :---------- | :-------- |
+| grant_type | specifies the authorization grant type; must be `authorization_code` in this example | yes |
+| code | the authorization code | yes |
+| redirect_uri | the redirect_uri value used in the request for the authorization code | yes - only if it was provided in the request for the authorization code.  And, it must match the value used to retrieve the authorization code. |
+| client_id and client_secret | the client credentials | yes, for **confidential** clients.  However, another means of authenticating the client could be used instead |
+
+*Response Headers*
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+```
+
+*Response Body*
+
+```json
+{
+    "access_token":"ZnL8d84lQq4268l6WuzMnz4Knw9oVJe8",
+    "token_type":"bearer",
+    "expires_in":3600
+}
+```
+
+The response includes an access token of the `bearer` token type.  There are other acceptable token types, but `bearer` is commonly used for web-based API access.
+
+The `expires_in` parameter is optional.  The client is expected to use the access token until it expires.
 
 Note: The authorization server can, optionally, issue a **refresh token** when the **access token** is issued.  This allows the client to exchange the refresh token for a new access token when the original access token expires.
 
-Client-based web applications, such as **Single-Page Applications** implemented in a language like `Javascript`, are not expected to securely store client credentials.  
+####Requesting a protected resource
+Given a valid access token, a client can request a protected resources as follows:
 
+```http
+GET /employees/123 HTTP/1.1
+Host: api.acmecorp.com
+Authorization: Bearer ZnL8d84lQq4268l6WuzMnz4Knw9oVJe8
+```
+
+Similarly, the access token should be used with other request methods as well.
+
+####Client-side applications
+Client-based web applications, such as **Single-Page Applications** implemented in a language like `Javascript`, are not expected to securely store client credentials.  Therefore, it would be insecure to use a `client secret`.
+
+OAuth2 provides an **Implicit Authorization Grant** for **Public** applications.  The workflow is as follows:
+
+![Implicit Authorization](http://www.websequencediagrams.com/cgi-bin/cdraw?lz=UmVzb3VyY2UgT3duZXIgLT4gSlMgQXBwOiB2aXNpdHMKAAkGIC0-IAAdDjogcmVkaXJlY3RzIHRvIEF1dGhvcml6YXRpb24gU2VydmVyCgBLEgATFDogcmVxdWVzdCBhY2Nlc3MgdG9rZW4KAD4UAHMUYXV0aGVudGljAHUGYW5kL29yIGdyYW50ABcFAIENCT8AZyljb3JyZWN0IGNyZWRlbnRpYWxzIGFuZCBwZXJtaXNzaW9uIHRvAE8UAIEcGQCCTQgAgVUNCg&s=vs2010) 
+
+*Requesting an access token*
+
+```http
+GET /token?response_type=token&client_id=123456&redirect_uri=https%3A%2F%2Fwww.clientwebapp.com%2Fjsapp&scope=...&state=abc123 HTTP/1.1
+Host: api.acmecorp.com
+```
+
+The client-side web application differs from the server-side application in that it does not request an authorization code.  Instead, it requests an access token right away.
+
+*Response*
+
+```http
+HTTP/1.1 302 Found
+Location: https://www.clientwebapp.com/jsapp?access_token=q8AoGgq84kI7esQ6qSQz6ba1XZjLXbXV&token_type=bearer&expires_in=3600&scope=employee_info&state=abc123
+```
+
+If access is granted, the token and associated token data is passed to the client-side web application via the query portion of the URI.  This allows, for example, a javascript application to parse the values in the URI.
+
+*Requesting a protected resource from a client-side application*
+
+```http
+GET /employees/123?access_token=q8AoGgq84kI7esQ6qSQz6ba1XZjLXbXV HTTP/1.1
+Host: api.acmecorp.com
+```
+
+Note: The authorization server should consider the status of the client when determining scope and expiration of an access token. 
+
+####High-Privileged Applications
+Some client applications receive higher levels of trust than others.  Typically, that is the case for client applications that are owned and operated by the same group that owns and operates the resource server.  For example, a Twitter client created by Twitter could be deserving of a higher level of trust by the Twitter authorization server than a 3rd-party Twitter client.
+
+In this case, OAuth2 offers an alternative authorization grant called, **"Resource Owner Password Credentials Grant"**.  The workflow is as follows:
+
+![Resource Owner Password Credentials Grant](http://www.websequencediagrams.com/cgi-bin/cdraw?lz=UmVzb3VyY2UgT3duZXIgLT4gVHJ1c3RlZCBBcHA6IHByb3ZpZGVzIGNyZWRlbnRpYWxzCgAXCyAtPiBBdXRob3JpemF0aW9uIFNlcnZlcjogcmVxdWVzdCBhY2Nlc3MgdG9rZW4Kbm90ZSBvdmVyAFgOACQIaW5jbHVkZXMgdGhlIACBCw8AdgsgYW5kAB4FY2xpZW50AIEPDQB5FACBRREAgQgMIAoK&s=vs2010)
+
+This workflow allows the client application to have access to the credentials of the Resource Owner.  Using those credentials, and the client credentials of the application, a request is made for an access token.  After validating the client credentials and the Resource Owner credentials, an access token is returned.
+
+Note: This option should be used sparingly.  Use this option if no other method can be employed.
+
+| Parameter | Description | Required? |
+| :-------- | :---------- | :-------- |
+| grant_type | the type of authorization grant; must be set to `password` | yes |
+| username | the username of the Resource Owner | yes |
+| password | the Resource Owner's password | yes |
+| scope | a service-defined limit on access | no |
+
+The parameter list assumes the client credentials are passed in the `Authorization` header.  
+
+*Example Request Headers*
+```http
+POST /tokens HTTP/1.1
+Host: api.acmecorp.com
+Content-Type: application/x-www-form-urlencoded
+Authorization: Basic 1I8Jnc6t649CN8LcVHXTU3ZgTHBB
+```
+
+*Request Body*
+
+```
+grant_type=password&username=clarkkent&password=h0lla@loi5
+```
 
 ###In Practice
 
 * Use OAuth2 to secure a web-based API.
-* Use TLS to secure communications between the client and servers.
-
-
+* Use TLS to secure transmission of credentials, codes, and tokens.
