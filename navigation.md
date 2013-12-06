@@ -3,4 +3,3 @@
 [REST Basics](constraints.md)
 [Developing an API](developing-api.md)
 [References](references.md)
-[Download PDF](rest-playbook.pdf)
