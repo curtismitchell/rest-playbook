@@ -15,6 +15,5 @@ For clarity of this guide, let's contrast what REST is against what it is not.
 | applied to the design of HTTP/1.1 | HTTP |
 
 Before diving into examples and detailed guidance, please checkout the [REST Basics](constraints.md).
-
-
+ 
 <a class="btn btn-primary" href="constraints.md">Learn more about REST</a>
