@@ -909,7 +909,21 @@ Authorization: Basic 1I8Jnc6t649CN8LcVHXTU3ZgTHBB
 grant_type=password&username=clarkkent&password=h0lla@loi5
 ```
 
+####Client Access
+OAuth2 provides a `Client Credentials` authorization grant in order to allow client applications to access protected resources without mediation by a Resource Owner.  This could apply to resources owned by the client application directly such as the registration information it provided to the authorization server.  Or, it could apply to protected resources of other resource owners where authorization was previously arranged with the authorization server.
+
+When needed, the `Client Credentials` workflow is fairly simple:
+
+![Client Credentials](http://www.websequencediagrams.com/cgi-bin/cdraw?lz=VHJ1c3RlZCBBcHAgLT4gQXV0aG9yaXphdGlvbiBTZXJ2ZXI6IHJlcXVlc3QgYWNjZXNzIHRva2VuCgAXFCAtPiAARws6ACUNIAoK&s=vs2010)
+
+The client authenticates using the client credentials.  Once authenticated (likely via the  `Authorization` header), the authorization server sends back a token.
+
+Similar to the previously discussed authorization grants, the client can request a `scope`.  And, the authorization server could specify a `scope` in the response.
+
 ###In Practice
 
 * Use OAuth2 to secure a web-based API.
 * Use TLS to secure transmission of credentials, codes, and tokens.
+
+###See Also
+* [RFC 6749 (proposal)](http://tools.ietf.org/html/rfc6749)
