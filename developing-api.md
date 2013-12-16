@@ -97,10 +97,10 @@ Lastly, controllers are application-specific actions that cannot be logically ma
 Here is an example URI from Github that models an action:
 
 ```http
-https://github.com/PF-iPaaS/core-services/compare/master...oauth-refresh
+https://github.com/curtismitchell/mdwiki/compare/master...h3_navigation
 ```
 
-```compare``` is the controller resource.  ```master...oauth-refresh``` is a query parameter in this example.  
+```compare``` is the controller resource.  ```master...h3_navigation``` is a query parameter in this example.  
 
 ###In Practice
 1. Collections and Stores should use plural nouns as identifiers
@@ -135,10 +135,11 @@ Effectively, there appears to be overlap between ```POST``` and ```PUT``` usage.
 
 | URI | Resource type | GET | POST | PUT | DELETE |
 | :-- | :-- | :--- | :-- | :----- | 
-| /employees | collection | returns list | add to list and return URI of new resource | not supported | delete all entities in list | 
-| /employees/123 | document | return single entity | update existing entity (partially or fully) | replace entire entity | delete entity |
+| /employees | collection | returns list | add to list and return URI of new resource | 400 Bad Request | delete all entities in list | 
+| /employees/123 | document (in collection) | return single entity | update existing entity (partially or fully) | 400 Bad Request | delete entity |
 | /documents | store | returns list | adds to list and return URI of new resource | replace list | delete all entities in list |
-| /documents/a-doc | document | retrieve single entity (if found) | update an existing entity | replace entity if exists, create a new entity if it doesn't exist | delete the entity |
+| /documents/a-doc | document (in store) | retrieve single entity (if found) | update an existing entity | replace entity if exists, create a new entity if it doesn't exist | delete the entity |
+| /documents/remove-orphans | controller | 400 Bad Request | perform action | 400 Bad Request | 400 Bad Request |
 
 Note: Some verbs/methods are considered "safe" because they do not propose state changes to the server.  ```GET```, ```OPTIONS```, and ```HEAD``` verbs are safe.  Idempotency is another important concept as it indicates operations that can occur repeatedly and achieve the same result.  ```GET``` and ```PUT``` operations are considered idempotent.  
 
