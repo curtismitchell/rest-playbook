@@ -32,7 +32,7 @@ Resources consist of four archetypes:
 
 A document is the base archetype.  It is the type used to interact with a singular resource.
 
-```http
+```markup
 http://www.myblog.com/posts/how-to-be-awesome
 ```
 
@@ -42,7 +42,7 @@ Collections and stores behave like directories of resources, or logical grouping
 
 An example URI in a collection may look like this:
 
-```http
+```markup
 https://corpintranet/projects
 ```
 
@@ -62,7 +62,7 @@ Content-Type: application/json
 
 Once processed, the new resource would be accessible at a URI created by the server:
 
-```http
+```markup
 https://corpintranet/projects/1
 ```
 
@@ -70,7 +70,7 @@ Here, **"1"** is the identifier of the newly created document resource.
 
 Similarly, an example URI in a store may look like this:
 
-```http
+```markup
 https://corpintranet/teams
 ```
 
@@ -88,7 +88,7 @@ Content-Type: application/json
 
 Which would yield a client-specified URI for the new resource:
 
-```http
+```markup
 https://corpintranet/teams/na-sales-team
 ```
 
@@ -96,11 +96,11 @@ Lastly, controllers are application-specific actions that cannot be logically ma
 
 Here is an example URI from Github that models an action:
 
-```http
+```markup
 https://github.com/curtismitchell/mdwiki/compare/master...h3_navigation
 ```
 
-```compare``` is the controller resource.  ```master...h3_navigation``` is a query parameter in this example.  
+`compare` is the controller resource.  ```master...h3_navigation``` is a query parameter in this example.  
 
 ###In Practice
 1. Collections and Stores should use plural nouns as identifiers
@@ -184,17 +184,21 @@ Media Types are the representations of resources.  Therefore, they are at the co
 ###Syntax
 Media Type declarations use the following syntax:
 
-<pre>{type}/{subtype}(optionally);{parameter(s)}</pre>
+```http
+{type}/{subtype}(optionally);{parameter(s)}
+```
 
 Here is an example:
 
-<pre>text/plain;charset=utf-8</pre>
+```http
+text/plain;charset=utf-8
+```
 
-The <pre>;charset=utf-8</pre> part is optional.  
+The `;charset=utf-8` part is optional.  
 
 As mentioned in the [constraints](constraints.md) section, media types are a combination of the data format and the fields.  HTTP allows media types to be specified in the ```Accept``` and ```Content-type``` header fields within a request.
 
-```Accept``` tells the server which data format the client would like to receive in the response.  While, ```Content-Type``` tells the recipient how the body of the message is formatted.  It applies to both requests and responses.
+`Accept` tells the server which data format the client would like to receive in the response.  While, ```Content-Type``` tells the recipient how the body of the message is formatted.  It applies to both requests and responses.
 
 As an example, consider a fictitious ```/car``` resource.  Assume the fields consist of make, model, and year.  The following table illustrates sample requests and responses for the given media type:
 
@@ -224,7 +228,7 @@ On the other hand, vendor-specific media types are not well known.  Therefore, c
 One API feature that media types can provide is versioning.  Being an online entity, a Web API will very likely evolve over time.  New resources may be added while deprecated resources may be retired.  Perhaps more frequently, data structures and formats will change.  To accommodate this, a version can be passed as a parameter with a media type.
 
 ```http
-Accept: application/vnd.acmecorp.product1.car+json;version2
+Accept: application/vnd.acmecorp.product1.car+json;version=2
 ```
 
 Using the ```Accept``` header, a client can request a specific version of a vendor-specified media type.  This is helpful if Acme Corp introduces changes to the media type that are not compatible - likely due to a change in required fields.
@@ -241,11 +245,9 @@ There are times when the totality of a media type is more than the client needs.
 
 ###All clients require the same subset of fields
 
-When all clients are expected to need the same subset of fields, a different media type could be provided.  Assume the following media type:
+When all clients are expected to need the same subset of fields, a different media type could be provided.  Assume the following media type `application/vnd.acmecorp.contact+json`:
 
-```
-application/vnd.acmecorp.contact+json
-
+```javascript
 {
     first_name: "John",
     last_name: "Doe",
@@ -261,11 +263,9 @@ application/vnd.acmecorp.contact+json
 }
 ```
 
-If all clients are expected to use the name and email address fields for many of their interactions, a smaller media type could be created:
+If all clients are expected to use the name and email address fields for many of their interactions, a smaller media type e.g. `application/vnd.acmecorp.mini-contact+json` could be created:
 
-```
-application/vnd.acmecorp.mini-contact+json
-
+```javascript
 {
     name: "John Doe",
     email: "john.doe@not-real.acmecorp.com"
@@ -281,7 +281,7 @@ ACCEPT: application/json
 
 And, assume this response:
 
-```
+```javascript
 {
     first_name: "John",
     last_name: "Doe",
@@ -306,7 +306,7 @@ ACCEPT: application/json
 
 would net a response like this one:
 
-```
+```javascript
 {
     name: "John Doe",
     email: "john.doe@not-real.acmecorp.com"
@@ -330,7 +330,7 @@ ACCEPT: application/json
 
 Similar to the examples above, the response would only contain the ```name``` and ```email``` fields.
 
-```
+```javascript
 {
     name: "John Doe",
     email: "john.doe@not-real.acmecorp.com"
@@ -434,7 +434,7 @@ ACCEPT: application/json
 
 - Assuming there are 50 employees with that last name, the server responds with **paged** results.  This is the body of the response:
 
-```
+```javascript
 {
     data: [
         {
@@ -794,7 +794,7 @@ Accept: application/json
 
 *Request body*
 
-```
+```http
 grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA&redirect_uri=https%3A%2F%2Fwww.clientwebapp.com%2Foauth2&client_id=12345&client_secret=shh_dont_tell
 ```
 
@@ -817,7 +817,7 @@ Content-Type: application/json
 
 *Response Body*
 
-```json
+```javascript
 {
     "access_token":"ZnL8d84lQq4268l6WuzMnz4Knw9oVJe8",
     "token_type":"bearer",
@@ -906,7 +906,7 @@ Authorization: Basic 1I8Jnc6t649CN8LcVHXTU3ZgTHBB
 
 *Request Body*
 
-```
+```http
 grant_type=password&username=clarkkent&password=h0lla@loi5
 ```
 

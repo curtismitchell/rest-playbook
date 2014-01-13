@@ -23,7 +23,7 @@ The **Uniform Interface** is a set of conventions a network-based system must fo
 ###Identification of Resources
 Within the client/server paradigm, clients make requests regarding **Resources**, and servers respond in-turn.  This interaction requires systems to agee to a standard of identifying resources available on the network.  HTTP uses **Uniform Resource Identifiers** for this purpose.  
 
-```http
+```markup
 http://en.wikipedia.org/wiki/Uniform_resource_identifier
 ```
 
@@ -58,17 +58,17 @@ HTTP facilitates the communication of metadata via a set of uniform header field
 HATEOAS, or **Hypermedia As The Engine Of Application State**, utilizes Hyperlinks and Hypertext to inform client systems of available resources.  This concept is pervasive in HTTP.  A simple request of a web page resource may return Hypertext Markup Language containing Hyperlinks to related web page resources.  This allows a client system to dynamically discover other available Resources.  In addition, context can be communicated to provide the client system with details about the relationship between the resources.
 
 
-<pre>
-&lt;<span class="text-danger">a</span> <span class="text-info">href</span>="/some-other-document"&gt;Some other document&lt;/<span class="text-danger">a</span>&gt;
-</pre>
+```markup
+<a href="/some-other-document">Some other document</a>
+```
 
 
 The above HTML is an example of a hyperlink referencing another document.  Notice it uses a URI to identify the resource.  The text, "Some other document", offers some relative information about the resource.  Similarly, a search result resource may offer the following as a hyperlink:
 
 
-<pre>
-&lt;<span class="text-danger">a</span> <span class="text-info">href</span>="/search?q=representational+state+transfer&start=10" rel="next"&gt;Page 2&lt;/<span class="text-danger">a</span>&gt;
-</pre>
+```markup
+<a href="/search?q=representational+state+transfer&start=10" rel="next">Page 2</a>
+```
 
 A client system receiving this hyperlink would have enough information to request "Page 2" of this search result.  
 
@@ -79,8 +79,10 @@ Keep in mind, the above examples are using HTML as the data format being transfe
 
 Therefore, HATEOAS is not limited to HTML.  The same result can be achieved in other data formats, such as CSV:
 
+```
 "href", "description", "rel"
 "/search?q=REST&start=10", "next page", "next"
+```
 
 Rendered in a spreadsheet application: 
 
